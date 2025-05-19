@@ -1,6 +1,8 @@
 package cfg
 
-// 配置结构体
+var GlobalServerConfig *ServerConfig
+
+// ServerConfig 配置结构体
 type ServerConfig struct {
 	IP     string
 	Port   string

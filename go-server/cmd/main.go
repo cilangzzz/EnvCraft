@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"os"
@@ -10,8 +11,7 @@ import (
 	"syscall"
 	"time"
 	"tsc/pkg/cfg"
-
-	"github.com/gin-gonic/gin"
+	"tsc/pkg/router"
 )
 
 var (
@@ -25,6 +25,7 @@ func main() {
 	flag.StringVar(&serverConfig.SecKey, "key", "default-secret-key", "安全密钥")
 	flag.BoolVar(&serverConfig.Debug, "debug", false, "是否开启调试模式")
 	flag.Parse()
+	cfg.GlobalServerConfig = &serverConfig
 
 	// 设置Gin模式
 	if serverConfig.Debug {
@@ -35,15 +36,8 @@ func main() {
 
 	// 初始化Gin引擎
 	r := gin.Default()
-
-	// 注册中间件
-	r.Use(
-		gin.Logger(),   // 内置日志中间件
-		gin.Recovery(), // 异常恢复
-	)
-
 	// 注册路由
-	registerRoutes(r)
+	router.RegisterRoutes(r)
 
 	// 创建HTTP服务器
 	srv := &http.Server{
@@ -52,7 +46,6 @@ func main() {
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
-
 	// 打印启动信息
 	printStartupInfo()
 
@@ -70,28 +63,6 @@ func main() {
 	log.Println("正在关闭服务器...")
 
 	log.Println("服务器已停止")
-}
-
-func registerRoutes(r *gin.Engine) {
-	// 健康检查
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "OK",
-			"config": gin.H{
-				"ip":    serverConfig.IP,
-				"port":  serverConfig.Port,
-				"debug": serverConfig.Debug,
-			},
-		})
-	})
-
-	// 示例API
-	r.GET("/api/v1/hello", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "Hello World",
-			"secret":  serverConfig.SecKey,
-		})
-	})
 }
 
 func printStartupInfo() {
