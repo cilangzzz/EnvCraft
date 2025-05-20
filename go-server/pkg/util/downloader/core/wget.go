@@ -8,26 +8,37 @@ import (
 	"path/filepath"
 )
 
-// WgetDownloader Wget风格下载实现
-type WgetDownloader struct{}
+type wgetDownloader struct {
+	httpDownloader Downloader
+	options        DownloadOptions
+}
 
-func (d *WgetDownloader) Download(urlStr string, dest string, writer io.Writer) error {
-	// 解析URL获取文件名
-	parsedURL, err := url.Parse(urlStr)
-	if err != nil {
-		return fmt.Errorf("URL解析失败: %v", err)
+func NewWgetDownloader(options DownloadOptions) Downloader {
+	return &wgetDownloader{
+		httpDownloader: NewHTTPDownloader(options),
+		options:        options,
 	}
+}
 
-	// 如果dest是目录，则使用URL中的文件名
-	if info, err := os.Stat(dest); err == nil && info.IsDir() {
+func (w *wgetDownloader) Download(info DownloadInfo, writer io.Writer) error {
+	// 自动从URL提取文件名
+	if fi, err := os.Stat(info.Dest); err == nil && fi.IsDir() {
+		parsedURL, err := url.Parse(info.URL)
+		if err != nil {
+			return fmt.Errorf("parse URL failed: %w", err)
+		}
+
 		filename := filepath.Base(parsedURL.Path)
-		if filename == "" || filename == "." {
+		if filename == "" {
 			filename = "index.html"
 		}
-		dest = filepath.Join(dest, filename)
+		info.Dest = filepath.Join(info.Dest, filename)
 	}
 
-	// 使用HttpClient实现下载
-	client := &HttpClientDownloader{}
-	return client.Download(urlStr, dest, writer)
+	return w.httpDownloader.Download(info, writer)
+}
+
+func (w *wgetDownloader) SetDefaultOptions(options DownloadOptions) {
+	w.options = options
+	w.httpDownloader.SetDefaultOptions(options)
 }
