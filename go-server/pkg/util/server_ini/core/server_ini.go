@@ -14,7 +14,9 @@ import (
 
 // PackageInfo 压缩包信息结构体
 type PackageInfo struct {
-	Path         string      // 压缩包路径
+	Path         string      // 压缩包路径（用户传入的原始路径）
+	FullPath     string      // 压缩包完整绝对路径
+	Name         string      // 压缩包文件名（不含路径）
 	FileCount    int         // 包含的文件数量
 	TotalSize    int64       // 解压后总大小
 	Files        []*FileInfo // 文件列表
@@ -38,15 +40,24 @@ type ExtractOptions struct {
 	Exclude      []string // 排除的文件模式
 }
 
-// OpenPackage 打开并解析压缩包
+// OpenPackage 打开并解析压缩包（更新后的实现）
 func OpenPackage(path string) (*PackageInfo, error) {
 	// 检查文件是否存在
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, fmt.Errorf("package file does not exist: %s", path)
 	}
 
+	// 获取完整绝对路径
+	fullPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	// 获取文件名
+	fileName := filepath.Base(path)
+
 	// 打开zip文件
-	r, err := zip.OpenReader(path)
+	r, err := zip.OpenReader(fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open zip file: %w", err)
 	}
@@ -74,13 +85,15 @@ func OpenPackage(path string) (*PackageInfo, error) {
 	}
 
 	// 获取压缩包修改时间
-	fileInfo, err := os.Stat(path)
+	fileInfo, err := os.Stat(fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get package stats: %w", err)
 	}
 
 	return &PackageInfo{
 		Path:         path,
+		FullPath:     fullPath,
+		Name:         fileName,
 		FileCount:    len(files),
 		TotalSize:    totalSize,
 		Files:        files,
@@ -195,9 +208,11 @@ func isExcluded(path string, patterns []string) bool {
 	return false
 }
 
-// PrintSummary 打印压缩包摘要信息
+// PrintSummary 更新后的打印方法
 func (p *PackageInfo) PrintSummary() {
 	fmt.Printf("Package Path: %s\n", p.Path)
+	fmt.Printf("Full Path: %s\n", p.FullPath)
+	fmt.Printf("Package Name: %s\n", p.Name)
 	fmt.Printf("File Count: %d\n", p.FileCount)
 	fmt.Printf("Total Size: %d bytes\n", p.TotalSize)
 	fmt.Printf("Modified Time: %s\n", p.ModifiedTime.Format(time.RFC3339))

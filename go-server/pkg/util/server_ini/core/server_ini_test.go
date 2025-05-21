@@ -265,3 +265,34 @@ func TestZipSlipProtection(t *testing.T) {
 		t.Errorf("Expected ZipSlip protection error, got: %v", err)
 	}
 }
+
+func TestPackageInfoFields(t *testing.T) {
+	if err := setup(); err != nil {
+		t.Fatalf("Setup failed: %v", err)
+	}
+	defer teardown()
+
+	// 使用相对路径测试
+	relPath := "testdata/test.zip"
+	pkg, err := OpenPackage(relPath)
+	if err != nil {
+		t.Fatalf("OpenPackage failed: %v", err)
+	}
+
+	// 验证Path字段
+	if pkg.Path != relPath {
+		t.Errorf("Expected Path %s, got %s", relPath, pkg.Path)
+	}
+
+	// 验证FullPath字段
+	absPath, _ := filepath.Abs(relPath)
+	if pkg.FullPath != absPath {
+		t.Errorf("Expected FullPath %s, got %s", absPath, pkg.FullPath)
+	}
+
+	// 验证Name字段
+	expectedName := "test.zip"
+	if pkg.Name != expectedName {
+		t.Errorf("Expected Name %s, got %s", expectedName, pkg.Name)
+	}
+}
