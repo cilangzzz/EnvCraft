@@ -4,7 +4,9 @@ package constants
 type DownloadType string
 
 const (
-	HTTP DownloadType = "HTTP"
-	WGET DownloadType = "WGET"
-	FTP  DownloadType = "FTP"
+	HTTP    DownloadType = "HTTP"
+	HTTPS   DownloadType = "HTTPS"
+	WGET    DownloadType = "WGET"
+	FTP     DownloadType = "FTP"
+	UNKNOWN DownloadType = "UNKNOWN"
 )
