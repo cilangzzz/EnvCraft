@@ -10,8 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"tsc/pkg/backend_service/router"
 	"tsc/pkg/cfg"
-	"tsc/pkg/router"
 )
 
 var (
