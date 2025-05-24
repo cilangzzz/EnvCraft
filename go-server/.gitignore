@@ -27,3 +27,4 @@ go.work.sum
 
 # 测试数据
 testsdata/
+testdata/

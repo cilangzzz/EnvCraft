@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"tsc/pkg/util/downloader"
 )
 
 // mockFTPServer 模拟FTP服务器
@@ -99,7 +98,7 @@ func TestFTPDownloader_Download(t *testing.T) {
 	defer os.Remove(tmpFile.Name())
 
 	// 创建下载器
-	downloader := NewFTPDownloader(downloader.DownloadOptions{
+	downloader := NewFTPDownloader(DownloadOptions{
 		DefaultTimeout: time.Second * 5,
 	})
 
@@ -143,7 +142,7 @@ func TestFTPDownloader_WithChecksum(t *testing.T) {
 	defer os.Remove(tmpFile.Name())
 
 	// 创建下载器
-	downloader := NewFTPDownloader(downloader.DownloadOptions{})
+	downloader := NewFTPDownloader(DownloadOptions{})
 
 	// 测试带校验的下载
 	info := NewDownloadInfo("ftp://"+addr+"/testfile.txt", tmpFile.Name())

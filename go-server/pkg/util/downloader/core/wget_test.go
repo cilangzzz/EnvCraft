@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"tsc/pkg/util/downloader"
 )
 
 func TestWgetDownloader_Download(t *testing.T) {
@@ -24,10 +23,10 @@ func TestWgetDownloader_Download(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	// 创建下载器
-	newWgetDownloader := NewWgetDownloader(downloader.DownloadOptions{})
+	newWgetDownloader := NewWgetDownloader(DownloadOptions{})
 
 	// 测试下载到目录
-	info := downloader.NewDownloadInfo(ts.URL, tmpDir)
+	info := NewDownloadInfo(ts.URL, tmpDir)
 	if err := newWgetDownloader.Download(info, nil); err != nil {
 		t.Errorf("Download failed: %v", err)
 	}
@@ -63,10 +62,10 @@ func TestWgetDownloader_WithFilename(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	// 创建下载器
-	newWgetDownloader := NewWgetDownloader(downloader.DownloadOptions{})
+	newWgetDownloader := NewWgetDownloader(DownloadOptions{})
 
 	// 测试带文件名的URL
-	info := downloader.NewDownloadInfo(ts.URL+"/testfile.txt", tmpDir)
+	info := NewDownloadInfo(ts.URL+"/testfile.txt", tmpDir)
 	if err := newWgetDownloader.Download(info, nil); err != nil {
 		t.Errorf("Download failed: %v", err)
 	}

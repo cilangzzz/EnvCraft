@@ -101,11 +101,11 @@ func TestOpenPackage(t *testing.T) {
 		t.Errorf("Expected 1 file, got %d", pkg.FileCount)
 	}
 
-	if len(pkg.Files) != 1 {
-		t.Errorf("Expected 1 file in list, got %d", len(pkg.Files))
+	if len(pkg.FileInfos) != 1 {
+		t.Errorf("Expected 1 file in list, got %d", len(pkg.FileInfos))
 	}
 
-	fileInfo := pkg.Files[0]
+	fileInfo := pkg.FileInfos[0]
 	if fileInfo.Name() != filepath.Base(testSourceFile) {
 		t.Errorf("Expected file name %s, got %s", filepath.Base(testSourceFile), fileInfo.Name())
 	}

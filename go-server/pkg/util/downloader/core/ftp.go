@@ -3,28 +3,27 @@ package core
 import (
 	"context"
 	"fmt"
+	"github.com/jlaffaye/ftp"
 	"io"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/jlaffaye/ftp"
-	"tsc/pkg/util/downloader"
 	"tsc/pkg/util/downloader/util"
 )
 
 type ftpDownloader struct {
-	options downloader.DownloadOptions
+	options DownloadOptions
 }
 
-func NewFTPDownloader(options downloader.DownloadOptions) downloader.Downloader {
+func NewFTPDownloader(options DownloadOptions) Downloader {
 	return &ftpDownloader{
 		options: options,
 	}
 }
 
-func (f *ftpDownloader) Download(info downloader.DownloadInfo, writer io.Writer) error {
+func (f *ftpDownloader) Download(info DownloadInfo, writer io.Writer) error {
 	// 设置默认值
 	if info.Timeout == 0 {
 		info.Timeout = f.options.DefaultTimeout
@@ -82,6 +81,16 @@ func (f *ftpDownloader) Download(info downloader.DownloadInfo, writer io.Writer)
 	}
 	defer resp.Close()
 
+	// 处理目标路径
+	dest := info.Dest
+	if fi, err := os.Stat(dest); err == nil && fi.IsDir() {
+	} else if os.IsNotExist(err) {
+		// 如果目标路径不存在，创建所有父目录
+		dir := filepath.Dir(dest)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
+	}
 	// 创建目标文件
 	file, err := os.OpenFile(info.Dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, info.FileMode)
 	if err != nil {
@@ -110,6 +119,6 @@ func (f *ftpDownloader) Download(info downloader.DownloadInfo, writer io.Writer)
 	return nil
 }
 
-func (f *ftpDownloader) SetDefaultOptions(options downloader.DownloadOptions) {
+func (f *ftpDownloader) SetDefaultOptions(options DownloadOptions) {
 	f.options = options
 }

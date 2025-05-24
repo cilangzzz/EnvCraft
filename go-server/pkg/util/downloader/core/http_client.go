@@ -8,21 +8,20 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-	"tsc/pkg/util/downloader"
 	"tsc/pkg/util/downloader/util"
 )
 
 type httpDownloader struct {
-	options downloader.DownloadOptions
+	options DownloadOptions
 }
 
-func NewHTTPDownloader(options downloader.DownloadOptions) downloader.Downloader {
+func NewHTTPDownloader(options DownloadOptions) Downloader {
 	return &httpDownloader{
 		options: options,
 	}
 }
 
-func (h *httpDownloader) Download(info downloader.DownloadInfo, writer io.Writer) error {
+func (h *httpDownloader) Download(info DownloadInfo, writer io.Writer) error {
 	// 设置默认值
 	if info.Timeout == 0 {
 		info.Timeout = h.options.DefaultTimeout
@@ -68,7 +67,7 @@ func (h *httpDownloader) Download(info downloader.DownloadInfo, writer io.Writer
 	return fmt.Errorf("after %d retries, last error: %w", info.MaxRetries, lastError)
 }
 
-func (h *httpDownloader) doDownload(client *http.Client, info downloader.DownloadInfo, writer io.Writer) error {
+func (h *httpDownloader) doDownload(client *http.Client, info DownloadInfo, writer io.Writer) error {
 	req, err := http.NewRequest("GET", info.URL, nil)
 	if err != nil {
 		return fmt.Errorf("create request failed: %w", err)
@@ -102,11 +101,18 @@ func (h *httpDownloader) doDownload(client *http.Client, info downloader.Downloa
 	// 处理目标路径
 	dest := info.Dest
 	if fi, err := os.Stat(dest); err == nil && fi.IsDir() {
+		// 如果目标是目录，自动生成文件名
 		filename := filepath.Base(info.URL)
 		if filename == "" {
 			filename = "downloaded_file"
 		}
 		dest = filepath.Join(dest, filename)
+	} else if os.IsNotExist(err) {
+		// 如果目标路径不存在，创建所有父目录
+		dir := filepath.Dir(dest)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
 	}
 
 	// 创建目标文件
@@ -126,7 +132,7 @@ func (h *httpDownloader) doDownload(client *http.Client, info downloader.Downloa
 	// 设置进度写入器
 	var destWriter io.Writer = file
 	if writer != nil {
-		if pw, ok := writer.(downloader.ProgressWriter); ok {
+		if pw, ok := writer.(ProgressWriter); ok {
 			pw.SetTotal(resp.ContentLength)
 		}
 		destWriter = io.MultiWriter(file, writer)
@@ -147,6 +153,6 @@ func (h *httpDownloader) doDownload(client *http.Client, info downloader.Downloa
 	return nil
 }
 
-func (h *httpDownloader) SetDefaultOptions(options downloader.DownloadOptions) {
+func (h *httpDownloader) SetDefaultOptions(options DownloadOptions) {
 	h.options = options
 }

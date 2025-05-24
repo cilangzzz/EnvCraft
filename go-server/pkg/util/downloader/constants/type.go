@@ -1,12 +1,13 @@
 package constants
 
-// DownloadType 下载类型常量
-type DownloadType string
+import (
+	"tsc/pkg/util/downloader/core"
+)
 
 const (
-	HTTP    DownloadType = "HTTP"
-	HTTPS   DownloadType = "HTTPS"
-	WGET    DownloadType = "WGET"
-	FTP     DownloadType = "FTP"
-	UNKNOWN DownloadType = "UNKNOWN"
+	HTTP    core.DownloadType = "HTTP"
+	HTTPS   core.DownloadType = "HTTPS"
+	WGET    core.DownloadType = "WGET"
+	FTP     core.DownloadType = "FTP"
+	UNKNOWN core.DownloadType = "UNKNOWN"
 )

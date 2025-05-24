@@ -19,7 +19,7 @@ type PackageInfo struct {
 	Name         string      // 压缩包文件名（不含路径）
 	FileCount    int         // 包含的文件数量
 	TotalSize    int64       // 解压后总大小
-	Files        []*FileInfo // 文件列表
+	FileInfos    []*FileInfo // 文件列表
 	ModifiedTime time.Time   // 压缩包修改时间
 }
 
@@ -96,7 +96,7 @@ func OpenPackage(path string) (*PackageInfo, error) {
 		Name:         fileName,
 		FileCount:    len(files),
 		TotalSize:    totalSize,
-		Files:        files,
+		FileInfos:    files,
 		ModifiedTime: fileInfo.ModTime(),
 	}, nil
 }
@@ -216,8 +216,8 @@ func (p *PackageInfo) PrintSummary() {
 	fmt.Printf("File Count: %d\n", p.FileCount)
 	fmt.Printf("Total Size: %d bytes\n", p.TotalSize)
 	fmt.Printf("Modified Time: %s\n", p.ModifiedTime.Format(time.RFC3339))
-	fmt.Println("Files:")
-	for _, file := range p.Files {
+	fmt.Println("FileInfos:")
+	for _, file := range p.FileInfos {
 		fmt.Printf("  %s (%d bytes, compressed: %v)\n",
 			file.RelativePath, file.Size(), file.IsCompressed)
 	}
