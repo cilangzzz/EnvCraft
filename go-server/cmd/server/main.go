@@ -10,25 +10,20 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"tsc/pkg/backend_service/router"
-	"tsc/pkg/cfg"
-)
-
-var (
-	serverConfig = cfg.ServerConfig{}
+	"tsc/internal/backend_service/router"
+	"tsc/internal/cfg"
 )
 
 func main() {
 	// 解析命令行参数
-	flag.StringVar(&serverConfig.IP, "ip", "0.0.0.0", "服务器监听IP")
-	flag.StringVar(&serverConfig.Port, "port", "8080", "服务器监听端口")
-	flag.StringVar(&serverConfig.SecKey, "key", "default-secret-key", "安全密钥")
-	flag.BoolVar(&serverConfig.Debug, "debug", false, "是否开启调试模式")
+	flag.StringVar(&cfg.GlobalServerConfig.IP, "ip", "0.0.0.0", "服务器监听IP")
+	flag.StringVar(&cfg.GlobalServerConfig.Port, "port", "8080", "服务器监听端口")
+	flag.StringVar(&cfg.GlobalServerConfig.SecKey, "key", "default-secret-key", "安全密钥")
+	flag.BoolVar(&cfg.GlobalServerConfig.Debug, "debug", false, "是否开启调试模式")
 	flag.Parse()
-	cfg.GlobalServerConfig = &serverConfig
 
 	// 设置Gin模式
-	if serverConfig.Debug {
+	if cfg.GlobalServerConfig.Debug {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
@@ -41,7 +36,7 @@ func main() {
 
 	// 创建HTTP服务器
 	srv := &http.Server{
-		Addr:         fmt.Sprintf("%s:%s", serverConfig.IP, serverConfig.Port),
+		Addr:         fmt.Sprintf("%s:%s", cfg.GlobalServerConfig.IP, cfg.GlobalServerConfig.Port),
 		Handler:      r,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -68,8 +63,8 @@ func main() {
 func printStartupInfo() {
 	fmt.Println("========================================")
 	fmt.Println("Gin 服务器启动配置:")
-	fmt.Printf("监听地址: %s:%s\n", serverConfig.IP, serverConfig.Port)
-	fmt.Printf("安全密钥: %s\n", serverConfig.SecKey)
-	fmt.Printf("调试模式: %v\n", serverConfig.Debug)
+	fmt.Printf("监听地址: %s:%s\n", cfg.GlobalServerConfig.IP, cfg.GlobalServerConfig.Port)
+	fmt.Printf("安全密钥: %s\n", cfg.GlobalServerConfig.SecKey)
+	fmt.Printf("调试模式: %v\n", cfg.GlobalServerConfig.Debug)
 	fmt.Println("========================================")
 }

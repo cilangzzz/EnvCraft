@@ -1,6 +1,9 @@
 package router
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"tsc/internal/backend_service/interceptor"
+)
 
 func RegisterRoutes(r *gin.Engine) {
 
@@ -9,6 +12,8 @@ func RegisterRoutes(r *gin.Engine) {
 		gin.Logger(),   // 内置日志中间件
 		gin.Recovery(), // 异常恢复
 	)
+
+	r.Use(interceptor.AuthMiddleware())
 
 	//// 健康检查
 	//r.GET("/health", func(c *gin.Context) {
