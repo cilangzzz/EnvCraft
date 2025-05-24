@@ -30,5 +30,6 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// 密钥验证通过，继续处理请求
 		c.Next()
+
 	}
 }

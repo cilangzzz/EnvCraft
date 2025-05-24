@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 	"time"
+	"tsc/pkg/util/downloader"
 )
 
 func TestHTTPDownloader_Download(t *testing.T) {
@@ -24,13 +25,13 @@ func TestHTTPDownloader_Download(t *testing.T) {
 	defer os.Remove(tmpFile.Name())
 
 	// 创建下载器
-	downloader := NewHTTPDownloader(DownloadOptions{
+	newHTTPDownloader := NewHTTPDownloader(downloader.DownloadOptions{
 		DefaultTimeout: time.Second * 5,
 	})
 
 	// 测试下载
-	info := NewDownloadInfo(ts.URL, tmpFile.Name())
-	if err := downloader.Download(info, nil); err != nil {
+	info := downloader.NewDownloadInfo(ts.URL, tmpFile.Name())
+	if err := newHTTPDownloader.Download(info, nil); err != nil {
 		t.Errorf("Download failed: %v", err)
 	}
 
@@ -60,20 +61,20 @@ func TestHTTPDownloader_WithChecksum(t *testing.T) {
 	defer os.Remove(tmpFile.Name())
 
 	// 创建下载器
-	downloader := NewHTTPDownloader(DownloadOptions{})
+	newHTTPDownloader := NewHTTPDownloader(downloader.DownloadOptions{})
 
 	// 测试带校验的下载
-	info := NewDownloadInfo(ts.URL, tmpFile.Name())
+	info := downloader.NewDownloadInfo(ts.URL, tmpFile.Name())
 	info.Checksum = "6fe13b5c9a94c9da9d3cc3e1977f778c"
 	info.ChecksumType = "md5"
-
-	if err := downloader.Download(info, nil); err != nil {
+	newHTTPDownloader.Download(info, nil)
+	if err := newHTTPDownloader.Download(info, nil); err != nil {
 		t.Errorf("Download with checksum failed: %v", err)
 	}
 
 	// 测试错误的校验码
 	info.Checksum = "wrong_checksum"
-	err = downloader.Download(info, nil)
+	err = newHTTPDownloader.Download(info, nil)
 	if err == nil {
 		t.Error("Expected checksum error, got nil")
 	}

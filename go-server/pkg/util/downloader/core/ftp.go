@@ -10,20 +10,21 @@ import (
 	"time"
 
 	"github.com/jlaffaye/ftp"
+	"tsc/pkg/util/downloader"
 	"tsc/pkg/util/downloader/util"
 )
 
 type ftpDownloader struct {
-	options DownloadOptions
+	options downloader.DownloadOptions
 }
 
-func NewFTPDownloader(options DownloadOptions) Downloader {
+func NewFTPDownloader(options downloader.DownloadOptions) downloader.Downloader {
 	return &ftpDownloader{
 		options: options,
 	}
 }
 
-func (f *ftpDownloader) Download(info DownloadInfo, writer io.Writer) error {
+func (f *ftpDownloader) Download(info downloader.DownloadInfo, writer io.Writer) error {
 	// 设置默认值
 	if info.Timeout == 0 {
 		info.Timeout = f.options.DefaultTimeout
@@ -109,6 +110,6 @@ func (f *ftpDownloader) Download(info DownloadInfo, writer io.Writer) error {
 	return nil
 }
 
-func (f *ftpDownloader) SetDefaultOptions(options DownloadOptions) {
+func (f *ftpDownloader) SetDefaultOptions(options downloader.DownloadOptions) {
 	f.options = options
 }

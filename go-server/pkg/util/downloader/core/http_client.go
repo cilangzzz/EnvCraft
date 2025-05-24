@@ -8,20 +8,21 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"tsc/pkg/util/downloader"
 	"tsc/pkg/util/downloader/util"
 )
 
 type httpDownloader struct {
-	options DownloadOptions
+	options downloader.DownloadOptions
 }
 
-func NewHTTPDownloader(options DownloadOptions) Downloader {
+func NewHTTPDownloader(options downloader.DownloadOptions) downloader.Downloader {
 	return &httpDownloader{
 		options: options,
 	}
 }
 
-func (h *httpDownloader) Download(info DownloadInfo, writer io.Writer) error {
+func (h *httpDownloader) Download(info downloader.DownloadInfo, writer io.Writer) error {
 	// 设置默认值
 	if info.Timeout == 0 {
 		info.Timeout = h.options.DefaultTimeout
@@ -67,7 +68,7 @@ func (h *httpDownloader) Download(info DownloadInfo, writer io.Writer) error {
 	return fmt.Errorf("after %d retries, last error: %w", info.MaxRetries, lastError)
 }
 
-func (h *httpDownloader) doDownload(client *http.Client, info DownloadInfo, writer io.Writer) error {
+func (h *httpDownloader) doDownload(client *http.Client, info downloader.DownloadInfo, writer io.Writer) error {
 	req, err := http.NewRequest("GET", info.URL, nil)
 	if err != nil {
 		return fmt.Errorf("create request failed: %w", err)
@@ -125,7 +126,7 @@ func (h *httpDownloader) doDownload(client *http.Client, info DownloadInfo, writ
 	// 设置进度写入器
 	var destWriter io.Writer = file
 	if writer != nil {
-		if pw, ok := writer.(ProgressWriter); ok {
+		if pw, ok := writer.(downloader.ProgressWriter); ok {
 			pw.SetTotal(resp.ContentLength)
 		}
 		destWriter = io.MultiWriter(file, writer)
@@ -146,6 +147,6 @@ func (h *httpDownloader) doDownload(client *http.Client, info DownloadInfo, writ
 	return nil
 }
 
-func (h *httpDownloader) SetDefaultOptions(options DownloadOptions) {
+func (h *httpDownloader) SetDefaultOptions(options downloader.DownloadOptions) {
 	h.options = options
 }

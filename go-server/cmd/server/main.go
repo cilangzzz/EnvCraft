@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+	cfg.GlobalServerConfig = &cfg.ServerConfig{}
 	// 解析命令行参数
 	flag.StringVar(&cfg.GlobalServerConfig.IP, "ip", "0.0.0.0", "服务器监听IP")
 	flag.StringVar(&cfg.GlobalServerConfig.Port, "port", "8080", "服务器监听端口")
