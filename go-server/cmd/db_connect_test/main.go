@@ -20,8 +20,15 @@ func main() {
 		panic(fmt.Errorf("解析配置失败: %v", err))
 	}
 
+	// MYSQL
+	//cfg.GlobalServerConfig = &applicationConfig
+	//_, err := db.InitDB(cfg.DB_MYSQL)
+	//if err != nil {
+	//	return
+	//}
+
 	cfg.GlobalServerConfig = &applicationConfig
-	_, err := db.InitDB(cfg.DB_MYSQL)
+	_, err := db.InitDB(cfg.DB_SQLITE)
 	if err != nil {
 		return
 	}

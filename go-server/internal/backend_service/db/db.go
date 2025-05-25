@@ -1,3 +1,4 @@
+// Package db 用于暴露给外部使用获取数据库引擎
 package db
 
 import (
@@ -22,10 +23,10 @@ func InitDB(dbType string) (*gorm.DB, error) {
 	switch DbType {
 	case cfg.DB_MYSQL:
 		DbEngine = GormMysql()
-		return nil, nil
+		return DbEngine, nil
 	case cfg.DB_SQLITE:
 		DbEngine = GormSqlite()
-		return nil, nil
+		return DbEngine, nil
 	default:
 		return nil, nil
 	}

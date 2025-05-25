@@ -16,4 +16,5 @@ db-config:
     max-open-conns: 100
 
   sqlite:
-    path: "/data/app.db"
+    db-name: "app_db"
+    path: "testdata"

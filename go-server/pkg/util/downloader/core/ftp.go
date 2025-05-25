@@ -58,7 +58,7 @@ func (f *ftpDownloader) Download(info DownloadInfo, writer io.Writer) error {
 	}
 
 	if conn == nil {
-		return fmt.Errorf("connect to FTP server failed after %d retries: %w", info.MaxRetries, lastError)
+		return fmt.Errorf("connect to FTP application failed after %d retries: %w", info.MaxRetries, lastError)
 	}
 	defer conn.Quit()
 
