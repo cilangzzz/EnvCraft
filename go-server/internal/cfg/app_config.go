@@ -12,11 +12,11 @@ type ApplicationConfig struct {
 	SecKey   string
 	Debug    bool
 	DbType   string
-	DbConfig DbConfig
+	DbConfig DbConfig `mapstructure:"db-config"`
 }
 
 // DbConfig 数据库配置
 type DbConfig struct {
-	Mysql  Mysql
-	Sqlite Sqlite
+	Mysql  Mysql  `mapstructure:"mysql"`
+	Sqlite Sqlite `mapstructure:"sqlite"`
 }

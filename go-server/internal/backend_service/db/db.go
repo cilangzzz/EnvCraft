@@ -21,8 +21,10 @@ func InitDB(dbType string) (*gorm.DB, error) {
 	DbType = dbType
 	switch DbType {
 	case cfg.DB_MYSQL:
+		DbEngine = GormMysql()
 		return nil, nil
 	case cfg.DB_SQLITE:
+		DbEngine = GormSqlite()
 		return nil, nil
 	default:
 		return nil, nil
