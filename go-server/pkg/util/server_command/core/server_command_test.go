@@ -11,6 +11,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"tsc/pkg/util/server_command/constants"
 )
 
 // ========== 测试辅助工具 ==========
@@ -127,7 +128,7 @@ func TestValidateRequest(t *testing.T) {
 		{
 			name: "empty command",
 			req: &ExecuteRequest{
-				Type:    TypeCommand,
+				Type:    constants.TypeCommand,
 				Command: "",
 			},
 			wantErr: true,
@@ -143,7 +144,7 @@ func TestValidateRequest(t *testing.T) {
 		{
 			name: "valid command request",
 			req: &ExecuteRequest{
-				Type:    TypeCommand,
+				Type:    constants.TypeCommand,
 				Command: "echo",
 				Args:    []string{"hello"},
 			},
@@ -152,7 +153,7 @@ func TestValidateRequest(t *testing.T) {
 		{
 			name: "batch file not found",
 			req: &ExecuteRequest{
-				Type:    TypeBatch,
+				Type:    constants.TypeBatch,
 				Command: "/non/existent/file.bat",
 			},
 			wantErr: true,
@@ -188,8 +189,8 @@ func TestExecuteCommand_Success(t *testing.T) {
 		t.Fatalf("ExecuteCommand failed: %v", err)
 	}
 
-	if response.Status != StatusCompleted {
-		t.Errorf("Expected status %s, got %s", StatusCompleted, response.Status)
+	if response.Status != constants.StatusCompleted {
+		t.Errorf("Expected status %s, got %s", constants.StatusCompleted, response.Status)
 	}
 
 	if response.ExitCode != 0 {
@@ -209,8 +210,8 @@ func TestExecuteCommand_Failure(t *testing.T) {
 		t.Fatal("Expected error for non-existent command")
 	}
 
-	if response.Status != StatusFailed {
-		t.Errorf("Expected status %s, got %s", StatusFailed, response.Status)
+	if response.Status != constants.StatusFailed {
+		t.Errorf("Expected status %s, got %s", constants.StatusFailed, response.Status)
 	}
 }
 
@@ -232,8 +233,8 @@ func TestExecuteBatch_Success(t *testing.T) {
 		t.Fatalf("ExecuteBatch failed: %v", err)
 	}
 
-	if response.Status != StatusCompleted {
-		t.Errorf("Expected status %s, got %s", StatusCompleted, response.Status)
+	if response.Status != constants.StatusCompleted {
+		t.Errorf("Expected status %s, got %s", constants.StatusCompleted, response.Status)
 	}
 
 	if response.ExitCode != 0 {
@@ -264,8 +265,8 @@ func TestExecuteBatch_WithArgs(t *testing.T) {
 		t.Fatalf("ExecuteBatch with args failed: %v", err)
 	}
 
-	if response.Status != StatusCompleted {
-		t.Errorf("Expected status %s, got %s", StatusCompleted, response.Status)
+	if response.Status != constants.StatusCompleted {
+		t.Errorf("Expected status %s, got %s", constants.StatusCompleted, response.Status)
 	}
 
 	if !strings.Contains(response.Stdout, "test1") || !strings.Contains(response.Stdout, "test2") {
@@ -299,7 +300,7 @@ func TestExecuteAsync(t *testing.T) {
 	}
 
 	// 异步执行应该立即返回
-	if response.Status != StatusPending && response.Status != StatusRunning {
+	if response.Status != constants.StatusPending && response.Status != constants.StatusRunning {
 		t.Errorf("Expected status pending or running for async execution, got %s", response.Status)
 	}
 
@@ -312,8 +313,8 @@ func TestExecuteAsync(t *testing.T) {
 	}
 
 	finalResponse := completed[0]
-	if finalResponse.Status != StatusCompleted {
-		t.Errorf("Expected final status %s, got %s", StatusCompleted, finalResponse.Status)
+	if finalResponse.Status != constants.StatusCompleted {
+		t.Errorf("Expected final status %s, got %s", constants.StatusCompleted, finalResponse.Status)
 	}
 }
 
@@ -332,7 +333,7 @@ func TestExecuteWithTimeout(t *testing.T) {
 	}
 
 	req := &ExecuteRequest{
-		Type:          TypeCommand,
+		Type:          constants.TypeCommand,
 		Command:       cmd,
 		Args:          args,
 		Timeout:       1 * time.Second,
@@ -351,8 +352,8 @@ func TestExecuteWithTimeout(t *testing.T) {
 		t.Fatal("Expected timeout error")
 	}
 
-	if response.Status != StatusCanceled {
-		t.Errorf("Expected status %s, got %s", StatusCanceled, response.Status)
+	if response.Status != constants.StatusCanceled {
+		t.Errorf("Expected status %s, got %s", constants.StatusCanceled, response.Status)
 	}
 }
 
@@ -397,8 +398,8 @@ func TestCancelExecution(t *testing.T) {
 	// 等待取消完成
 	time.Sleep(1 * time.Second)
 
-	if execution.Response.Status != StatusCanceled {
-		t.Errorf("Expected status %s, got %s", StatusCanceled, execution.Response.Status)
+	if execution.Response.Status != constants.StatusCanceled {
+		t.Errorf("Expected status %s, got %s", constants.StatusCanceled, execution.Response.Status)
 	}
 }
 
@@ -430,7 +431,7 @@ func TestExecuteWithWorkDir(t *testing.T) {
 	}
 
 	req := &ExecuteRequest{
-		Type:          TypeCommand,
+		Type:          constants.TypeCommand,
 		Command:       cmd,
 		Args:          args,
 		WorkDir:       tempDir,
@@ -462,7 +463,7 @@ func TestExecuteWithEnv(t *testing.T) {
 	}
 
 	req := &ExecuteRequest{
-		Type:    TypeCommand,
+		Type:    constants.TypeCommand,
 		Command: cmd,
 		Args:    args,
 		Env: map[string]string{
@@ -546,8 +547,8 @@ echo "Batch test completed"`
 		t.Fatalf("Complex batch integration test failed: %v", err)
 	}
 
-	if response.Status != StatusCompleted {
-		t.Errorf("Expected status %s, got %s", StatusCompleted, response.Status)
+	if response.Status != constants.StatusCompleted {
+		t.Errorf("Expected status %s, got %s", constants.StatusCompleted, response.Status)
 	}
 
 	if !strings.Contains(response.Stdout, "30") {
@@ -634,7 +635,7 @@ func TestGetShellCommand(t *testing.T) {
 func TestValidateBatchFile(t *testing.T) {
 	// 测试不存在的文件
 	err := ValidateBatchFile("/non/existent/file.bat")
-	if err != ErrFileNotFound {
+	if err != constants.ErrFileNotFound {
 		t.Errorf("Expected ErrFileNotFound, got %v", err)
 	}
 

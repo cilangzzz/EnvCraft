@@ -13,42 +13,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"tsc/pkg/util/server_command/constants"
 )
 
 // ========== 常量定义 ==========
-
-const (
-	// StatusPending 执行状态
-	StatusPending   = "pending"
-	StatusRunning   = "running"
-	StatusCompleted = "completed"
-	StatusFailed    = "failed"
-	StatusCanceled  = "canceled"
-
-	// TypeBatch 命令类型
-	TypeBatch   = "batch"
-	TypeCommand = "command"
-
-	// DefaultTimeout 默认超时时间
-	DefaultTimeout = 30 * time.Second
-
-	// DefaultBufferSize 缓冲区大小
-	DefaultBufferSize = 1024
-
-	// WindowsPlatform 平台相关
-	WindowsPlatform = "windows"
-	LinuxPlatform   = "linux"
-	MacOSPlatform   = "darwin"
-)
-
-// 错误常量
-var (
-	ErrInvalidCommand    = fmt.Errorf("invalid command")
-	ErrExecutionTimeout  = fmt.Errorf("execution timeout")
-	ErrExecutionCanceled = fmt.Errorf("execution canceled")
-	ErrFileNotFound      = fmt.Errorf("file not found")
-	ErrPermissionDenied  = fmt.Errorf("permission denied")
-)
 
 // ========== 模型定义 ==========
 
@@ -177,11 +145,11 @@ func (e *Executor) Execute(req *ExecuteRequest, opts *ExecuteOptions) (*ExecuteR
 // ExecuteBatch 执行批处理文件
 func (e *Executor) ExecuteBatch(filePath string, args []string, opts *ExecuteOptions) (*ExecuteResponse, error) {
 	req := &ExecuteRequest{
-		Type:          TypeBatch,
+		Type:          constants.TypeBatch,
 		Command:       filePath,
 		Args:          args,
 		CaptureOutput: true,
-		Timeout:       DefaultTimeout,
+		Timeout:       constants.DefaultTimeout,
 	}
 
 	return e.Execute(req, opts)
@@ -190,11 +158,11 @@ func (e *Executor) ExecuteBatch(filePath string, args []string, opts *ExecuteOpt
 // ExecuteCommand 执行单个命令
 func (e *Executor) ExecuteCommand(command string, args []string, opts *ExecuteOptions) (*ExecuteResponse, error) {
 	req := &ExecuteRequest{
-		Type:          TypeCommand,
+		Type:          constants.TypeCommand,
 		Command:       command,
 		Args:          args,
 		CaptureOutput: true,
-		Timeout:       DefaultTimeout,
+		Timeout:       constants.DefaultTimeout,
 	}
 
 	return e.Execute(req, opts)
@@ -238,7 +206,7 @@ func (e *Executor) CancelExecution(id string) error {
 		}
 	}
 
-	execution.Response.Status = StatusCanceled
+	execution.Response.Status = constants.StatusCanceled
 	execution.Response.EndTime = time.Now()
 	execution.Response.Duration = execution.Response.EndTime.Sub(execution.Response.StartTime)
 
@@ -254,21 +222,21 @@ func (e *Executor) validateRequest(req *ExecuteRequest) error {
 	}
 
 	if req.Command == "" {
-		return ErrInvalidCommand
+		return constants.ErrInvalidCommand
 	}
 
-	if req.Type != TypeBatch && req.Type != TypeCommand {
+	if req.Type != constants.TypeBatch && req.Type != constants.TypeCommand {
 		return fmt.Errorf("invalid command type: %s", req.Type)
 	}
 
-	if req.Type == TypeBatch {
+	if req.Type == constants.TypeBatch {
 		if _, err := os.Stat(req.Command); os.IsNotExist(err) {
-			return ErrFileNotFound
+			return constants.ErrFileNotFound
 		}
 	}
 
 	if req.Timeout <= 0 {
-		req.Timeout = DefaultTimeout
+		req.Timeout = constants.DefaultTimeout
 	}
 
 	return nil
@@ -286,7 +254,7 @@ func (e *Executor) createExecution(req *ExecuteRequest) *Execution {
 		Request: req,
 		Response: &ExecuteResponse{
 			ID:        id,
-			Status:    StatusPending,
+			Status:    constants.StatusPending,
 			StartTime: time.Now(),
 		},
 	}
@@ -327,11 +295,11 @@ func (e *Executor) doExecute(ctx context.Context, execution *Execution, opts *Ex
 	resp := execution.Response
 
 	// 更新状态
-	resp.Status = StatusRunning
+	resp.Status = constants.StatusRunning
 
 	// 准备命令
 	var cmd *exec.Cmd
-	if req.Type == TypeBatch {
+	if req.Type == constants.TypeBatch {
 		cmd = e.prepareBatchCommand(req)
 	} else {
 		cmd = e.prepareCommand(req)
@@ -364,7 +332,7 @@ func (e *Executor) doExecute(ctx context.Context, execution *Execution, opts *Ex
 	// 执行命令
 	err := cmd.Start()
 	if err != nil {
-		resp.Status = StatusFailed
+		resp.Status = constants.StatusFailed
 		resp.Error = err.Error()
 		resp.EndTime = time.Now()
 		resp.Duration = resp.EndTime.Sub(resp.StartTime)
@@ -382,25 +350,25 @@ func (e *Executor) doExecute(ctx context.Context, execution *Execution, opts *Ex
 	resp.Duration = resp.EndTime.Sub(resp.StartTime)
 
 	if ctx.Err() == context.DeadlineExceeded {
-		resp.Status = StatusCanceled
-		resp.Error = ErrExecutionTimeout.Error()
-		return resp, ErrExecutionTimeout
+		resp.Status = constants.StatusCanceled
+		resp.Error = constants.ErrExecutionTimeout.Error()
+		return resp, constants.ErrExecutionTimeout
 	}
 
 	if ctx.Err() == context.Canceled {
-		resp.Status = StatusCanceled
-		resp.Error = ErrExecutionCanceled.Error()
-		return resp, ErrExecutionCanceled
+		resp.Status = constants.StatusCanceled
+		resp.Error = constants.ErrExecutionCanceled.Error()
+		return resp, constants.ErrExecutionCanceled
 	}
 
 	if err != nil {
-		resp.Status = StatusFailed
+		resp.Status = constants.StatusFailed
 		resp.Error = err.Error()
 		if exitError, ok := err.(*exec.ExitError); ok {
 			resp.ExitCode = exitError.ExitCode()
 		}
 	} else {
-		resp.Status = StatusCompleted
+		resp.Status = constants.StatusCompleted
 		resp.ExitCode = 0
 	}
 
@@ -415,7 +383,7 @@ func (e *Executor) doExecute(ctx context.Context, execution *Execution, opts *Ex
 // prepareBatchCommand 准备批处理命令
 func (e *Executor) prepareBatchCommand(req *ExecuteRequest) *exec.Cmd {
 	switch runtime.GOOS {
-	case WindowsPlatform:
+	case constants.WindowsPlatform:
 		args := []string{"/C", req.Command}
 		args = append(args, req.Args...)
 		return exec.Command("cmd", args...)
@@ -458,7 +426,7 @@ func (e *Executor) mapToEnvSlice(env map[string]string) []string {
 
 // IsWindows 判断是否为Windows平台
 func IsWindows() bool {
-	return runtime.GOOS == WindowsPlatform
+	return runtime.GOOS == constants.WindowsPlatform
 }
 
 // GetShellCommand 获取Shell命令
@@ -473,7 +441,7 @@ func GetShellCommand() (string, []string) {
 func ValidateBatchFile(filePath string) error {
 	info, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
-		return ErrFileNotFound
+		return constants.ErrFileNotFound
 	}
 	if err != nil {
 		return err
@@ -486,7 +454,7 @@ func ValidateBatchFile(filePath string) error {
 	// 检查文件权限
 	file, err := os.Open(filePath)
 	if err != nil {
-		return ErrPermissionDenied
+		return constants.ErrPermissionDenied
 	}
 	file.Close()
 
