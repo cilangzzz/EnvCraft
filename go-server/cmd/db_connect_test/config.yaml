@@ -1,0 +1,20 @@
+# config.yaml
+ip: "0.0.0.0"
+port: "8080"
+sec-key: "your-secret-key"
+debug: true
+db-type: "mysql"  # 或 "sqlite"
+
+db-config:
+  mysql:
+    prefix: "t_"
+    port: "3306"
+    db-name: "app_db"
+    username: "root"
+    password: "123456"
+    path: "127.0.0.1"
+    max-open-conns: 100
+
+  sqlite:
+    db-name: "app_db"
+    path: "testdata"
