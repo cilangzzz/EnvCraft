@@ -1,4 +1,4 @@
-package server_ini
+package core
 
 import (
 	"crypto/md5"
