@@ -14,22 +14,23 @@ import (
 
 // PackageInfo 压缩包信息结构体
 type PackageInfo struct {
-	Path         string      // 压缩包路径（用户传入的原始路径）
-	FullPath     string      // 压缩包完整绝对路径
-	Name         string      // 压缩包文件名（不含路径）
-	FileCount    int         // 包含的文件数量
-	TotalSize    int64       // 解压后总大小
-	FileInfos    []*FileInfo // 文件列表
-	ModifiedTime time.Time   // 压缩包修改时间
+	Path         string      `gorm:"type:varchar(512);not null;comment:压缩包路径（用户传入的原始路径）"`
+	FullPath     string      `gorm:"type:varchar(512);not null;uniqueIndex;comment:压缩包完整绝对路径"`
+	Name         string      `gorm:"type:varchar(256);not null;comment:压缩包文件名（不含路径）"`
+	FileCount    int         `gorm:"type:int;not null;default:0;comment:包含的文件数量"`
+	TotalSize    int64       `gorm:"type:bigint;not null;default:0;comment:解压后总大小"`
+	FileInfos    []*FileInfo `gorm:"foreignKey:PackageID;references:ID;comment:文件列表"`
+	ModifiedTime time.Time   `gorm:"type:datetime;not null;comment:压缩包修改时间"`
 }
 
 // FileInfo 文件详细信息结构体（扩展 fs.FileInfo）
 type FileInfo struct {
+	PackageID    uint   `gorm:"type:int;not null;index;comment:所属压缩包ID"`
+	RelativePath string `gorm:"type:varchar(512);not null;comment:文件在压缩包中的相对路径"`
+	IsCompressed bool   `gorm:"type:tinyint(1);not null;default:0;comment:是否被压缩"`
+	CRC32        uint32 `gorm:"type:int unsigned;not null;default:0;comment:CRC32校验值"`
+	Method       uint16 `gorm:"type:smallint unsigned;not null;default:0;comment:压缩方法"`
 	fs.FileInfo         // 嵌入官方 FileInfo
-	RelativePath string // 文件在压缩包中的相对路径
-	IsCompressed bool   // 是否被压缩
-	CRC32        uint32 // CRC32校验值
-	Method       uint16 // 压缩方法
 }
 
 // ExtractOptions 解压选项
