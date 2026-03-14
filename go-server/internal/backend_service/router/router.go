@@ -39,6 +39,12 @@ func RegisterRoutes(r *gin.Engine) {
 		// 回滚迁移
 		migrationGroup.POST("/rollback", migrationHandler.Rollback)
 
+		// 导出配置
+		migrationGroup.POST("/export", migrationHandler.Export)
+
+		// 导入配置
+		migrationGroup.POST("/import", migrationHandler.Import)
+
 		// 获取任务列表
 		migrationGroup.GET("/tasks", migrationHandler.ListTasks)
 

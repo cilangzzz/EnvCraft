@@ -399,3 +399,268 @@ func FromMigrationPreview(preview *core.MigrationPreview) *DryRunResponse {
 		},
 	}
 }
+
+// ==================== Export/Import 相关类型 ====================
+
+// ExportRequest 导出请求
+type ExportRequest struct {
+	// Type 迁移类型
+	Type string `json:"type" binding:"required" example:"config_file"`
+
+	// Name 任务名称
+	Name string `json:"name" example:"导出 IDEA 配置"`
+
+	// Source 源配置
+	Source SourceConfig `json:"source" binding:"required"`
+
+	// Options 导出选项
+	Options *ExportOptions `json:"options"`
+}
+
+// ExportOptions 导出选项
+type ExportOptions struct {
+	// ExportPath 导出文件路径
+	ExportPath string `json:"export_path" example:"D:\\exports\\idea_config.export.json"`
+
+	// IncludeRawContent 是否包含原始内容
+	IncludeRawContent bool `json:"include_raw_content" example:"false"`
+
+	// Tags 标签
+	Tags []string `json:"tags" example:"[\"ide\",\"java\"]"`
+
+	// Description 描述
+	Description string `json:"description" example:"IDEA 配置导出"`
+
+	// AppInfo 应用信息
+	AppInfo *AppInfoConfig `json:"app_info"`
+}
+
+// AppInfoConfig 应用信息配置
+type AppInfoConfig struct {
+	Name     string `json:"name" example:"IntelliJ IDEA"`
+	Version  string `json:"version" example:"2024.1"`
+	Category string `json:"category" example:"IDE"`
+}
+
+// ImportRequest 导入请求
+type ImportRequest struct {
+	// Type 迁移类型
+	Type string `json:"type" binding:"required" example:"config_file"`
+
+	// Name 任务名称
+	Name string `json:"name" example:"导入 IDEA 配置"`
+
+	// Source 导入源配置
+	Source ImportSourceConfig `json:"source" binding:"required"`
+
+	// Target 目标配置
+	Target TargetConfig `json:"target"`
+
+	// Options 导入选项
+	Options *ImportOptions `json:"options"`
+}
+
+// ImportSourceConfig 导入源配置
+type ImportSourceConfig struct {
+	// Path 导入文件路径
+	Path string `json:"path" binding:"required" example:"D:\\exports\\idea_config.export.json"`
+}
+
+// ImportOptions 导入选项
+type ImportOptions struct {
+	// PreserveFormat 是否保持原始格式
+	PreserveFormat bool `json:"preserve_format" example:"true"`
+
+	// MergeMode 合并模式
+	MergeMode string `json:"merge_mode" example:"merge"`
+
+	// Backup 是否备份
+	Backup bool `json:"backup" example:"true"`
+
+	// BackupPath 备份路径
+	BackupPath string `json:"backup_path" example:"D:\\backup"`
+}
+
+// ExportResponse 导出响应
+type ExportResponse struct {
+	// TaskID 任务ID
+	TaskID string `json:"task_id" example:"task_123"`
+
+	// ExportID 导出ID
+	ExportID string `json:"export_id" example:"export_123"`
+
+	// Status 执行状态
+	Status string `json:"status" example:"completed"`
+
+	// Message 结果消息
+	Message string `json:"message" example:"成功导出配置文件"`
+
+	// ExportPath 导出文件路径
+	ExportPath string `json:"export_path" example:"D:\\exports\\idea_config.export.json"`
+
+	// Package 导出包简要信息
+	Package *ExportPackageBrief `json:"package,omitempty"`
+
+	// Duration 执行时长（毫秒）
+	Duration int64 `json:"duration" example:"1500"`
+}
+
+// ExportPackageBrief 导出包简要信息
+type ExportPackageBrief struct {
+	// ExportID 导出ID
+	ExportID string `json:"export_id" example:"export_123"`
+
+	// ExportTime 导出时间
+	ExportTime time.Time `json:"export_time" example:"2024-01-01T12:00:00Z"`
+
+	// OriginalPath 原始路径
+	OriginalPath string `json:"original_path" example:"C:\\Users\\...\\.idea\\config.xml"`
+
+	// OriginalFormat 原始格式
+	OriginalFormat string `json:"original_format" example:"xml"`
+
+	// Checksum 校验和
+	Checksum string `json:"checksum" example:"sha256:abc123..."`
+}
+
+// ImportResponse 导入响应
+type ImportResponse struct {
+	// TaskID 任务ID
+	TaskID string `json:"task_id" example:"task_123"`
+
+	// Status 执行状态
+	Status string `json:"status" example:"completed"`
+
+	// Message 结果消息
+	Message string `json:"message" example:"成功导入配置文件"`
+
+	// RecordsCount 导入记录数
+	RecordsCount int `json:"records_count" example:"10"`
+
+	// Summary 汇总信息
+	Summary SummaryResponse `json:"summary"`
+
+	// SourcePackage 源导入包信息
+	SourcePackage *ExportPackageBrief `json:"source_package,omitempty"`
+
+	// Duration 执行时长（毫秒）
+	Duration int64 `json:"duration" example:"1500"`
+}
+
+// ToMigrationConfig 将导出请求转换为迁移配置
+func (r *ExportRequest) ToMigrationConfig(taskID string) *core.MigrationConfig {
+	config := core.NewMigrationConfig()
+	config.TaskID = taskID
+	config.Name = r.Name
+	config.Type = core.MigrationType(r.Type)
+
+	// 源配置
+	config.Source.Type = r.Source.Type
+	config.Source.Path = r.Source.Path
+	config.Source.Variables = r.Source.Variables
+	config.Source.Encoding = r.Source.Encoding
+	config.Source.Format = r.Source.Format
+
+	if r.Source.Filter != nil {
+		config.Source.Filter.Include = r.Source.Filter.Include
+		config.Source.Filter.Exclude = r.Source.Filter.Exclude
+		config.Source.Filter.Pattern = r.Source.Filter.Pattern
+	}
+
+	// 导出选项
+	if r.Options != nil {
+		config.Options.ExportPath = r.Options.ExportPath
+		config.Options.IncludeRawContent = r.Options.IncludeRawContent
+	}
+
+	return config
+}
+
+// ToMigrationConfig 将导入请求转换为迁移配置
+func (r *ImportRequest) ToMigrationConfig(taskID string) *core.MigrationConfig {
+	config := core.NewMigrationConfig()
+	config.TaskID = taskID
+	config.Name = r.Name
+	config.Type = core.MigrationType(r.Type)
+
+	// 导入源配置
+	config.Options.ImportPath = r.Source.Path
+
+	// 目标配置
+	config.Target.Type = r.Target.Type
+	config.Target.Path = r.Target.Path
+	config.Target.MergeMode = r.Target.MergeMode
+	config.Target.Backup = r.Target.Backup
+	config.Target.BackupPath = r.Target.BackupPath
+	config.Target.Encoding = r.Target.Encoding
+	config.Target.Format = r.Target.Format
+
+	// 导入选项
+	if r.Options != nil {
+		config.Options.PreserveFormat = r.Options.PreserveFormat
+		if r.Options.MergeMode != "" {
+			config.Target.MergeMode = r.Options.MergeMode
+		}
+		if r.Options.Backup {
+			config.Target.Backup = r.Options.Backup
+		}
+		if r.Options.BackupPath != "" {
+			config.Target.BackupPath = r.Options.BackupPath
+		}
+	}
+
+	return config
+}
+
+// FromExportResult 从导出结果创建响应
+func FromExportResult(result *core.ExportResult) *ExportResponse {
+	resp := &ExportResponse{
+		TaskID:     result.TaskID,
+		ExportID:   result.ExportID,
+		Status:     result.Status,
+		Message:    result.Message,
+		ExportPath: result.ExportPath,
+		Duration:   result.Duration,
+	}
+
+	if result.Package != nil {
+		resp.Package = &ExportPackageBrief{
+			ExportID:       result.Package.Metadata.ExportID,
+			ExportTime:     result.Package.Metadata.ExportTime,
+			OriginalPath:   result.Package.Metadata.OriginalPath,
+			OriginalFormat: result.Package.Metadata.OriginalFormat,
+			Checksum:       result.Package.Metadata.Checksum,
+		}
+	}
+
+	return resp
+}
+
+// FromImportResult 从导入结果创建响应
+func FromImportResult(result *core.ImportResult) *ImportResponse {
+	resp := &ImportResponse{
+		TaskID:       result.TaskID,
+		Status:       result.Status,
+		Message:      result.Message,
+		RecordsCount: len(result.Records),
+		Summary: SummaryResponse{
+			Total:   result.Summary.Total,
+			Success: result.Summary.Success,
+			Failed:  result.Summary.Failed,
+			Skipped: result.Summary.Skipped,
+		},
+		Duration: result.Duration,
+	}
+
+	if result.SourcePackage != nil {
+		resp.SourcePackage = &ExportPackageBrief{
+			ExportID:       result.SourcePackage.Metadata.ExportID,
+			ExportTime:     result.SourcePackage.Metadata.ExportTime,
+			OriginalPath:   result.SourcePackage.Metadata.OriginalPath,
+			OriginalFormat: result.SourcePackage.Metadata.OriginalFormat,
+			Checksum:       result.SourcePackage.Metadata.Checksum,
+		}
+	}
+
+	return resp
+}

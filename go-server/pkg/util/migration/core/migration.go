@@ -30,6 +30,18 @@ type MigrationStrategy interface {
 
 	// DryRun 预览迁移（模拟执行）
 	DryRun(ctx context.Context, config *MigrationConfig) (*MigrationPreview, error)
+
+	// Export 导出配置
+	Export(ctx context.Context, config *MigrationConfig) (*ExportResult, error)
+
+	// Import 导入配置
+	Import(ctx context.Context, config *MigrationConfig) (*ImportResult, error)
+
+	// ValidateExport 验证导出配置
+	ValidateExport(config *MigrationConfig) error
+
+	// ValidateImport 验证导入配置
+	ValidateImport(config *MigrationConfig) error
 }
 
 // MigrationConfig 迁移配置
@@ -141,6 +153,21 @@ type MigrationOptions struct {
 
 	// SkipValidation 是否跳过验证
 	SkipValidation bool `json:"skip_validation" gorm:"comment:是否跳过验证"`
+
+	// OperationMode 操作模式 (migrate, export, import)
+	OperationMode string `json:"operation_mode" gorm:"size:32;comment:操作模式"`
+
+	// ExportPath 导出文件路径 (导出模式使用)
+	ExportPath string `json:"export_path" gorm:"size:512;comment:导出文件路径"`
+
+	// ImportPath 导入文件路径 (导入模式使用)
+	ImportPath string `json:"import_path" gorm:"size:512;comment:导入文件路径"`
+
+	// IncludeRawContent 是否包含原始内容
+	IncludeRawContent bool `json:"include_raw_content" gorm:"comment:是否包含原始内容"`
+
+	// PreserveFormat 是否保持原始格式 (导入时)
+	PreserveFormat bool `json:"preserve_format" gorm:"comment:是否保持原始格式"`
 }
 
 // MigrationResult 迁移结果

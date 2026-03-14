@@ -292,3 +292,95 @@ func (h *Handler) ListStrategies(c *gin.Context) {
 func timePtr(t time.Time) *time.Time {
 	return &t
 }
+
+// Export 导出配置
+// @Summary 导出配置文件
+// @Description 将配置文件导出为标准 JSON 格式
+// @Tags 导入导出
+// @Accept json
+// @Produce json
+// @Param request body ExportRequest true "导出请求"
+// @Success 200 {object} common.Response{data=ExportResponse} "成功"
+// @Failure 400 {object} common.Response "请求参数错误"
+// @Failure 500 {object} common.Response "服务器错误"
+// @Router /api/v1/migration/export [post]
+func (h *Handler) Export(c *gin.Context) {
+	var req ExportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.Error(c, http.StatusBadRequest, "请求参数错误: "+err.Error())
+		return
+	}
+
+	taskID := uuid.New().String()
+
+	// 转换配置
+	config := req.ToMigrationConfig(taskID)
+
+	// 获取策略
+	strategy, err := core.GetStrategy(config.Type)
+	if err != nil {
+		common.Error(c, http.StatusBadRequest, "不支持的迁移类型: "+string(config.Type))
+		return
+	}
+
+	// 验证导出配置
+	if err := strategy.ValidateExport(config); err != nil {
+		common.Error(c, http.StatusBadRequest, "导出配置验证失败: "+err.Error())
+		return
+	}
+
+	// 执行导出
+	result, err := strategy.Export(c.Request.Context(), config)
+	if err != nil {
+		common.Error(c, http.StatusInternalServerError, "导出执行失败: "+err.Error())
+		return
+	}
+
+	common.Success(c, FromExportResult(result))
+}
+
+// Import 导入配置
+// @Summary 导入配置文件
+// @Description 从导出的 JSON 文件恢复配置
+// @Tags 导入导出
+// @Accept json
+// @Produce json
+// @Param request body ImportRequest true "导入请求"
+// @Success 200 {object} common.Response{data=ImportResponse} "成功"
+// @Failure 400 {object} common.Response "请求参数错误"
+// @Failure 500 {object} common.Response "服务器错误"
+// @Router /api/v1/migration/import [post]
+func (h *Handler) Import(c *gin.Context) {
+	var req ImportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.Error(c, http.StatusBadRequest, "请求参数错误: "+err.Error())
+		return
+	}
+
+	taskID := uuid.New().String()
+
+	// 转换配置
+	config := req.ToMigrationConfig(taskID)
+
+	// 获取策略
+	strategy, err := core.GetStrategy(config.Type)
+	if err != nil {
+		common.Error(c, http.StatusBadRequest, "不支持的迁移类型: "+string(config.Type))
+		return
+	}
+
+	// 验证导入配置
+	if err := strategy.ValidateImport(config); err != nil {
+		common.Error(c, http.StatusBadRequest, "导入配置验证失败: "+err.Error())
+		return
+	}
+
+	// 执行导入
+	result, err := strategy.Import(c.Request.Context(), config)
+	if err != nil {
+		common.Error(c, http.StatusInternalServerError, "导入执行失败: "+err.Error())
+		return
+	}
+
+	common.Success(c, FromImportResult(result))
+}

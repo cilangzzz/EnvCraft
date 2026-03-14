@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -I --proxy http://127.0.0.1:7897 https://github.com)",
+      "Bash(ss -an)",
+      "Bash(git --version)",
+      "Bash(git config --global http.sslBackend)",
+      "Bash(GIT_CURL_VERBOSE=1 git push origin main)",
+      "Bash(git push origin main)",
+      "Bash(powershell -Command \"cd ''f:\\\\work\\\\self-dev\\\\环境迁移\\\\EnvCraft\\\\go-server''; go build ./...\")"
+    ]
+  }
+}
