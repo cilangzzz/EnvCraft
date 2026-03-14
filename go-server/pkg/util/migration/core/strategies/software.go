@@ -443,3 +443,23 @@ func (s *SoftwareStrategy) getImpactLevel(path string) string {
 	}
 	return "low"
 }
+
+// Export 导出软件配置（暂不支持）
+func (s *SoftwareStrategy) Export(ctx context.Context, config *core.MigrationConfig) (*core.ExportResult, error) {
+	return nil, fmt.Errorf("export is not supported for software strategy")
+}
+
+// Import 导入软件配置（暂不支持）
+func (s *SoftwareStrategy) Import(ctx context.Context, config *core.MigrationConfig) (*core.ImportResult, error) {
+	return nil, fmt.Errorf("import is not supported for software strategy")
+}
+
+// ValidateExport 验证导出配置（暂不支持）
+func (s *SoftwareStrategy) ValidateExport(config *core.MigrationConfig) error {
+	return fmt.Errorf("export is not supported for software strategy")
+}
+
+// ValidateImport 验证导入配置（暂不支持）
+func (s *SoftwareStrategy) ValidateImport(config *core.MigrationConfig) error {
+	return fmt.Errorf("import is not supported for software strategy")
+}

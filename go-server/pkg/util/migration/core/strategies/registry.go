@@ -388,3 +388,23 @@ func (s *RegistryStrategy) isHighImpactPath(path string) bool {
 	}
 	return false
 }
+
+// Export 导出注册表（暂不支持）
+func (s *RegistryStrategy) Export(ctx context.Context, config *core.MigrationConfig) (*core.ExportResult, error) {
+	return nil, fmt.Errorf("export is not supported for registry strategy")
+}
+
+// Import 导入注册表（暂不支持）
+func (s *RegistryStrategy) Import(ctx context.Context, config *core.MigrationConfig) (*core.ImportResult, error) {
+	return nil, fmt.Errorf("import is not supported for registry strategy")
+}
+
+// ValidateExport 验证导出配置（暂不支持）
+func (s *RegistryStrategy) ValidateExport(config *core.MigrationConfig) error {
+	return fmt.Errorf("export is not supported for registry strategy")
+}
+
+// ValidateImport 验证导入配置（暂不支持）
+func (s *RegistryStrategy) ValidateImport(config *core.MigrationConfig) error {
+	return fmt.Errorf("import is not supported for registry strategy")
+}

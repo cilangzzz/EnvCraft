@@ -348,3 +348,23 @@ func (s *EnvVariableStrategy) deleteUserEnvVar(name string) error {
 func (s *EnvVariableStrategy) deleteSystemEnvVar(name string) error {
 	return os.Unsetenv(name)
 }
+
+// Export 导出环境变量（暂不支持）
+func (s *EnvVariableStrategy) Export(ctx context.Context, config *core.MigrationConfig) (*core.ExportResult, error) {
+	return nil, fmt.Errorf("export is not supported for env_variable strategy")
+}
+
+// Import 导入环境变量（暂不支持）
+func (s *EnvVariableStrategy) Import(ctx context.Context, config *core.MigrationConfig) (*core.ImportResult, error) {
+	return nil, fmt.Errorf("import is not supported for env_variable strategy")
+}
+
+// ValidateExport 验证导出配置（暂不支持）
+func (s *EnvVariableStrategy) ValidateExport(config *core.MigrationConfig) error {
+	return fmt.Errorf("export is not supported for env_variable strategy")
+}
+
+// ValidateImport 验证导入配置（暂不支持）
+func (s *EnvVariableStrategy) ValidateImport(config *core.MigrationConfig) error {
+	return fmt.Errorf("import is not supported for env_variable strategy")
+}

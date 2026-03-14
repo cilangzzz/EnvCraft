@@ -2,7 +2,11 @@ package strategies
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
@@ -329,6 +333,20 @@ func (s *ConfigFileStrategy) readConfigFile(path, format, encoding string) (map[
 				data[fullKey] = key.Value()
 			}
 		}
+	case "xml":
+		// XML 解析为通用 map 结构
+		var xmlData interface{}
+		if err := xml.Unmarshal(content, &xmlData); err != nil {
+			return nil, fmt.Errorf("failed to parse XML: %w", err)
+		}
+		// 将 XML 数据转换为 map
+		if m, ok := xmlData.(map[string]interface{}); ok {
+			data = m
+		} else {
+			// 如果无法直接转换为 map，存储原始内容
+			data["_raw"] = string(content)
+			data["_type"] = "xml"
+		}
 	default:
 		return nil, fmt.Errorf("unsupported format: %s", format)
 	}
@@ -372,6 +390,17 @@ func (s *ConfigFileStrategy) writeConfigFile(path string, data map[string]interf
 			sb.WriteString(fmt.Sprintf("%s = %v\n", key, value))
 		}
 		content = []byte(sb.String())
+	case "xml":
+		// XML 序列化
+		if rawContent, ok := data["_raw"].(string); ok {
+			content = []byte(rawContent)
+		} else {
+			xmlContent, err := xml.MarshalIndent(data, "", "  ")
+			if err != nil {
+				return fmt.Errorf("failed to serialize XML: %w", err)
+			}
+			content = []byte(xml.Header + string(xmlContent))
+		}
 	default:
 		return fmt.Errorf("unsupported format: %s", format)
 	}
@@ -490,4 +519,341 @@ func (s *ConfigFileStrategy) getActionType(data map[string]interface{}, key stri
 		return constants.ActionTypeUpdate
 	}
 	return constants.ActionTypeCreate
+}
+
+// Export 导出配置文件
+func (s *ConfigFileStrategy) Export(ctx context.Context, config *core.MigrationConfig) (*core.ExportResult, error) {
+	result := core.NewExportResult(config.TaskID)
+	result.ExportID = generateExportID()
+	defer func() {
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime).Milliseconds()
+	}()
+
+	// 1. 验证源文件
+	if _, err := os.Stat(config.Source.Path); os.IsNotExist(err) {
+		result.Status = constants.TaskStatusFailed
+		result.Message = fmt.Sprintf("源配置文件不存在: %s", config.Source.Path)
+		return result, err
+	}
+
+	// 2. 读取源配置
+	sourceData, err := s.readConfigFile(config.Source.Path, config.Source.Format, config.Source.Encoding)
+	if err != nil {
+		result.Status = constants.TaskStatusFailed
+		result.Message = fmt.Sprintf("读取源配置失败: %v", err)
+		return result, err
+	}
+
+	// 3. 应用过滤条件
+	filteredData := s.applyFilter(sourceData, config.Source.Filter)
+
+	// 4. 构建导出包
+	exportPkg := core.NewExportPackage()
+	exportPkg.Metadata.ExportID = result.ExportID
+	exportPkg.Metadata.SourceType = string(constants.MigrationTypeConfigFile)
+	exportPkg.Metadata.OriginalFormat = s.detectFormat(config.Source.Path, config.Source.Format)
+	exportPkg.Metadata.OriginalPath = config.Source.Path
+	exportPkg.Metadata.OriginalEncoding = config.Source.Encoding
+	exportPkg.Metadata.Checksum = s.calculateChecksum(filteredData)
+
+	exportPkg.Content.Data = filteredData
+
+	// 5. 可选：包含原始内容
+	if config.Options.IncludeRawContent {
+		rawContent, err := os.ReadFile(config.Source.Path)
+		if err == nil {
+			exportPkg.Content.RawContent = base64.StdEncoding.EncodeToString(rawContent)
+		}
+	}
+
+	// 6. 确定导出路径
+	exportPath := config.Options.ExportPath
+	if exportPath == "" {
+		exportPath = config.Source.Path + ".export.json"
+	}
+
+	// 7. 确保导出目录存在
+	exportDir := filepath.Dir(exportPath)
+	if err := os.MkdirAll(exportDir, 0755); err != nil {
+		result.Status = constants.TaskStatusFailed
+		result.Message = fmt.Sprintf("创建导出目录失败: %v", err)
+		return result, err
+	}
+
+	// 8. 写入导出文件
+	exportJSON, err := json.MarshalIndent(exportPkg, "", "  ")
+	if err != nil {
+		result.Status = constants.TaskStatusFailed
+		result.Message = fmt.Sprintf("序列化导出包失败: %v", err)
+		return result, err
+	}
+
+	if err := os.WriteFile(exportPath, exportJSON, 0644); err != nil {
+		result.Status = constants.TaskStatusFailed
+		result.Message = fmt.Sprintf("写入导出文件失败: %v", err)
+		return result, err
+	}
+
+	// 9. 记录导出操作
+	record := core.MigrationRecord{
+		StepName:   "导出配置文件",
+		ActionType: constants.ActionTypeExport,
+		Key:        config.Source.Path,
+		AfterValue: fmt.Sprintf("导出到 %s", exportPath),
+		Status:     constants.RecordStatusSuccess,
+		Timestamp:  time.Now(),
+	}
+	result.Records = append(result.Records, record)
+
+	result.Status = constants.TaskStatusCompleted
+	result.Message = fmt.Sprintf("成功导出配置文件到: %s", exportPath)
+	result.ExportPath = exportPath
+	result.Package = exportPkg
+
+	return result, nil
+}
+
+// Import 导入配置文件
+func (s *ConfigFileStrategy) Import(ctx context.Context, config *core.MigrationConfig) (*core.ImportResult, error) {
+	result := core.NewImportResult(config.TaskID)
+	defer func() {
+		result.EndTime = time.Now()
+		result.Duration = result.EndTime.Sub(result.StartTime).Milliseconds()
+	}()
+
+	// 1. 确定导入文件路径
+	importPath := config.Options.ImportPath
+	if importPath == "" {
+		importPath = config.Source.Path
+	}
+
+	// 2. 读取导入文件
+	importContent, err := os.ReadFile(importPath)
+	if err != nil {
+		result.Status = constants.TaskStatusFailed
+		result.Message = fmt.Sprintf("读取导入文件失败: %v", err)
+		return result, err
+	}
+
+	// 3. 解析导出包
+	var exportPkg core.ExportPackage
+	if err := json.Unmarshal(importContent, &exportPkg); err != nil {
+		result.Status = constants.TaskStatusFailed
+		result.Message = fmt.Sprintf("解析导出包失败: %v", err)
+		return result, err
+	}
+
+	result.SourcePackage = &exportPkg
+
+	// 4. 验证导出包
+	if err := s.validateExportPackage(&exportPkg); err != nil {
+		result.Status = constants.TaskStatusFailed
+		result.Message = fmt.Sprintf("导出包验证失败: %v", err)
+		return result, err
+	}
+
+	// 5. 确定目标格式
+	targetFormat := config.Target.Format
+	if config.Options.PreserveFormat || targetFormat == "" {
+		targetFormat = exportPkg.Metadata.OriginalFormat
+	}
+
+	// 6. 确定目标路径
+	targetPath := config.Target.Path
+	if targetPath == "" {
+		targetPath = exportPkg.Metadata.OriginalPath
+	}
+
+	// 7. 备份现有文件（如果需要）
+	if config.Target.Backup {
+		if _, err := os.Stat(targetPath); err == nil {
+			backupPath := config.Target.BackupPath
+			if backupPath == "" {
+				backupPath = targetPath + ".backup"
+			}
+			if err := s.backupFile(targetPath, backupPath); err != nil {
+				result.Status = constants.TaskStatusFailed
+				result.Message = fmt.Sprintf("备份失败: %v", err)
+				return result, err
+			}
+		}
+	}
+
+	// 8. 读取目标现有配置（如果存在）
+	var targetData map[string]interface{}
+	if _, err := os.Stat(targetPath); err == nil {
+		targetData, _ = s.readConfigFile(targetPath, targetFormat, config.Target.Encoding)
+	}
+	if targetData == nil {
+		targetData = make(map[string]interface{})
+	}
+
+	// 9. 应用合并策略
+	var mergedData map[string]interface{}
+	switch config.Target.MergeMode {
+	case "overwrite":
+		mergedData = exportPkg.Content.Data
+	case "merge":
+		mergedData = s.mergeConfig(targetData, exportPkg.Content.Data)
+	case "skip":
+		mergedData = targetData
+		for k, v := range exportPkg.Content.Data {
+			if _, exists := targetData[k]; !exists {
+				mergedData[k] = v
+			}
+		}
+	default:
+		mergedData = exportPkg.Content.Data
+	}
+
+	// 10. 确保目标目录存在
+	targetDir := filepath.Dir(targetPath)
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		result.Status = constants.TaskStatusFailed
+		result.Message = fmt.Sprintf("创建目标目录失败: %v", err)
+		return result, err
+	}
+
+	// 11. 写入目标文件
+	// 优先使用原始内容（如果有）
+	if exportPkg.Content.RawContent != "" && config.Options.PreserveFormat {
+		// 解码原始内容并直接写入
+		rawBytes, err := base64.StdEncoding.DecodeString(exportPkg.Content.RawContent)
+		if err != nil {
+			result.Status = constants.TaskStatusFailed
+			result.Message = fmt.Sprintf("解码原始内容失败: %v", err)
+			return result, err
+		}
+		if err := os.WriteFile(targetPath, rawBytes, 0644); err != nil {
+			result.Status = constants.TaskStatusFailed
+			result.Message = fmt.Sprintf("写入目标文件失败: %v", err)
+			return result, err
+		}
+		// 记录导入操作
+		record := core.MigrationRecord{
+			StepName:   "导入配置文件（原始内容）",
+			ActionType: constants.ActionTypeImport,
+			Key:        targetPath,
+			AfterValue: fmt.Sprintf("从 %s 导入", importPath),
+			Status:     constants.RecordStatusSuccess,
+			Timestamp:  time.Now(),
+		}
+		result.Records = append(result.Records, record)
+		result.Summary.Total++
+		result.Summary.Success++
+	} else if err := s.writeConfigFile(targetPath, mergedData, targetFormat, config.Target.Encoding); err != nil {
+		result.Status = constants.TaskStatusFailed
+		result.Message = fmt.Sprintf("写入目标文件失败: %v", err)
+		return result, err
+	} else {
+		// 12. 记录导入操作
+		for key, value := range mergedData {
+			record := core.MigrationRecord{
+				StepName:   fmt.Sprintf("导入配置项 %s", key),
+				ActionType: constants.ActionTypeImport,
+				Key:        key,
+				AfterValue: fmt.Sprintf("%v", value),
+				Status:     constants.RecordStatusSuccess,
+				Timestamp:  time.Now(),
+			}
+
+			if oldValue, exists := targetData[key]; exists {
+				record.BeforeValue = fmt.Sprintf("%v", oldValue)
+			}
+
+			result.Records = append(result.Records, record)
+			result.Summary.Total++
+			result.Summary.Success++
+		}
+	}
+
+	result.Status = constants.TaskStatusCompleted
+	result.Message = fmt.Sprintf("成功导入 %d 个配置项到: %s", result.Summary.Success, targetPath)
+
+	return result, nil
+}
+
+// ValidateExport 验证导出配置
+func (s *ConfigFileStrategy) ValidateExport(config *core.MigrationConfig) error {
+	if config == nil {
+		return fmt.Errorf("config cannot be nil")
+	}
+
+	if config.Source.Path == "" {
+		return fmt.Errorf("source path is required for export")
+	}
+
+	if _, err := os.Stat(config.Source.Path); os.IsNotExist(err) {
+		return fmt.Errorf("source file does not exist: %s", config.Source.Path)
+	}
+
+	return nil
+}
+
+// ValidateImport 验证导入配置
+func (s *ConfigFileStrategy) ValidateImport(config *core.MigrationConfig) error {
+	if config == nil {
+		return fmt.Errorf("config cannot be nil")
+	}
+
+	importPath := config.Options.ImportPath
+	if importPath == "" && config.Source.Path == "" {
+		return fmt.Errorf("import path is required")
+	}
+
+	if importPath == "" {
+		importPath = config.Source.Path
+	}
+
+	if _, err := os.Stat(importPath); os.IsNotExist(err) {
+		return fmt.Errorf("import file does not exist: %s", importPath)
+	}
+
+	return nil
+}
+
+// detectFormat 检测文件格式
+func (s *ConfigFileStrategy) detectFormat(path, format string) string {
+	if format != "" {
+		return format
+	}
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".json":
+		return "json"
+	case ".yaml", ".yml":
+		return "yaml"
+	case ".ini":
+		return "ini"
+	case ".toml":
+		return "toml"
+	case ".xml":
+		return "xml"
+	default:
+		return "unknown"
+	}
+}
+
+// calculateChecksum 计算内容校验和
+func (s *ConfigFileStrategy) calculateChecksum(data map[string]interface{}) string {
+	content, _ := json.Marshal(data)
+	hash := sha256.Sum256(content)
+	return "sha256:" + hex.EncodeToString(hash[:])
+}
+
+// validateExportPackage 验证导出包
+func (s *ConfigFileStrategy) validateExportPackage(pkg *core.ExportPackage) error {
+	if pkg.Metadata.Version == "" {
+		return fmt.Errorf("export package version is missing")
+	}
+	if pkg.Content.Data == nil {
+		return fmt.Errorf("export package content is empty")
+	}
+	return nil
+}
+
+// generateExportID 生成导出ID
+func generateExportID() string {
+	return fmt.Sprintf("export_%d", time.Now().UnixNano())
 }

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -I --proxy http://127.0.0.1:7897 https://github.com)",
+      "Bash(ss -an)",
+      "Bash(git --version)",
+      "Bash(git config --global http.sslBackend)",
+      "Bash(GIT_CURL_VERBOSE=1 git push origin main)",
+      "Bash(git push origin main)",
+      "Bash(powershell -Command \"cd ''f:\\\\work\\\\self-dev\\\\环境迁移\\\\EnvCraft\\\\go-server''; go build ./...\")",
+      "Read(//c/Users/sysadmin/AppData/Roaming/JetBrains/IntelliJIdea2024.1/settingsSync/**)",
+      "Bash(go list -m all)",
+      "Bash(go test -v ./pkg/util/migration/... -run TestIDEAConfigExportImport)",
+      "Bash(cmd.exe /c \"cd /d h:\\\\basePlatform\\\\EnvCraft\\\\go-server && go test -v ./pkg/util/migration/... -run TestIDEAConfigExportImport\")",
+      "Bash(powershell.exe -Command \"cd ''h:/basePlatform/EnvCraft/go-server''; go test -v ./pkg/util/migration/... -run TestIDEAConfigExportImport 2>&1\")",
+      "Read(//c/Users/sysadmin/**)"
+    ],
+    "additionalDirectories": [
+      "H:\\basePlatform\\testData"
+    ]
+  }
+}
