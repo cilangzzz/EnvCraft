@@ -4,10 +4,14 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"tsc/internal/backend_service/handler/migration"
 	"tsc/internal/backend_service/interceptor"
 
 	// 导入生成的 docs 包（确保已经执行过 swag init）
 	_ "tsc/internal/backend_service/docs" // 替换为你的项目模块路径
+
+	// 导入策略模块以触发 init() 自动注册
+	_ "tsc/pkg/util/migration/core/strategies"
 )
 
 func RegisterRoutes(r *gin.Engine) {
@@ -22,5 +26,26 @@ func RegisterRoutes(r *gin.Engine) {
 	// 注意：如果不需要认证可以访问，可以放在 AuthMiddleware 之前
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// 其他路由...
+	// 迁移 API 路由组
+	migrationHandler := migration.NewHandler()
+	migrationGroup := r.Group("/api/v1/migration")
+	{
+		// 执行迁移
+		migrationGroup.POST("/execute", migrationHandler.Execute)
+
+		// 预览迁移（模拟执行）
+		migrationGroup.POST("/dry-run", migrationHandler.DryRun)
+
+		// 回滚迁移
+		migrationGroup.POST("/rollback", migrationHandler.Rollback)
+
+		// 获取任务列表
+		migrationGroup.GET("/tasks", migrationHandler.ListTasks)
+
+		// 获取任务详情
+		migrationGroup.GET("/tasks/:task_id", migrationHandler.GetTask)
+
+		// 获取可用策略列表
+		migrationGroup.GET("/strategies", migrationHandler.ListStrategies)
+	}
 }
