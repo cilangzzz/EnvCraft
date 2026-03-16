@@ -5,7 +5,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
-	"tsc/internal/backend_service/cfg"
+	"tsc/cmd/backend_service/cfg"
 )
 
 // GormMysql 初始化Mysql数据库

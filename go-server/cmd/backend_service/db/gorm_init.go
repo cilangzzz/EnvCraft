@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 	"time"
-	cfg2 "tsc/internal/backend_service/cfg"
+	"tsc/cmd/backend_service/cfg"
 )
 
 var Gorm = new(_gorm)
@@ -19,20 +19,20 @@ type _gorm struct{}
 // Config gorm 自定义配置
 // Author [SliverHorn](https://github.com/SliverHorn)
 func (g *_gorm) Config(prefix string, singular bool) *gorm.Config {
-	var general cfg2.GeneralDB
-	switch cfg2.GlobalServerConfig.DbType {
+	var general cfg.GeneralDB
+	switch cfg.GlobalServerConfig.DbType {
 	case "mysql":
-		general = cfg2.GlobalServerConfig.DbConfig.Mysql.GeneralDB
+		general = cfg.GlobalServerConfig.DbConfig.Mysql.GeneralDB
 	//case "pgsql":
 	//	general = global.GVA_CONFIG.Pgsql.GeneralDB
 	//case "oracle":
 	//	general = global.GVA_CONFIG.Oracle.GeneralDB
 	case "sqlite":
-		general = cfg2.GlobalServerConfig.DbConfig.Sqlite.GeneralDB
+		general = cfg.GlobalServerConfig.DbConfig.Sqlite.GeneralDB
 	//case "mssql":
 	//	general = global.GVA_CONFIG.Mssql.GeneralDB
 	default:
-		general = cfg2.GlobalServerConfig.DbConfig.Mysql.GeneralDB
+		general = cfg.GlobalServerConfig.DbConfig.Mysql.GeneralDB
 	}
 	return &gorm.Config{
 		Logger: logger.New(NewWriter(general, log.New(os.Stdout, "\r\n", log.LstdFlags)), logger.Config{
@@ -49,11 +49,11 @@ func (g *_gorm) Config(prefix string, singular bool) *gorm.Config {
 }
 
 type Writer struct {
-	config cfg2.GeneralDB
+	config cfg.GeneralDB
 	writer logger.Writer
 }
 
-func NewWriter(config cfg2.GeneralDB, writer logger.Writer) *Writer {
+func NewWriter(config cfg.GeneralDB, writer logger.Writer) *Writer {
 	return &Writer{config: config, writer: writer}
 }
 

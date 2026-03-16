@@ -10,8 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"tsc/internal/backend_service/cfg"
-	"tsc/internal/backend_service/router"
+	"tsc/cmd/backend_service/cfg"
+	"tsc/cmd/backend_service/router"
 )
 
 func main() {

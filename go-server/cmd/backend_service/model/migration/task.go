@@ -2,8 +2,7 @@ package migration
 
 import (
 	"time"
-
-	"tsc/internal/backend_service/model/common"
+	"tsc/cmd/backend_service/model/common"
 )
 
 // MigrationTask 迁移任务模型

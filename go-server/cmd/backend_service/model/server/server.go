@@ -1,7 +1,7 @@
 package server
 
 import (
-	"tsc/internal/backend_service/model/common"
+	"tsc/cmd/backend_service/model/common"
 	downloaderCore "tsc/pkg/util/downloader/core"
 	serverIniCore "tsc/pkg/util/server_ini/core"
 )

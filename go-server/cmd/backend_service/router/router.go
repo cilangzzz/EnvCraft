@@ -4,9 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"tsc/internal/backend_service/handler/migration"
-	"tsc/internal/backend_service/interceptor"
-
+	"tsc/cmd/backend_service/handler/migration"
+	"tsc/cmd/backend_service/interceptor"
 	// 导入生成的 docs 包（确保已经执行过 swag init）
 	_ "tsc/internal/backend_service/docs" // 替换为你的项目模块路径
 

@@ -2,8 +2,7 @@ package migration
 
 import (
 	"time"
-
-	"tsc/internal/backend_service/model/common"
+	"tsc/cmd/backend_service/model/common"
 )
 
 // MigrationRecord 迁移记录模型

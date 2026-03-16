@@ -3,11 +3,11 @@ package migration
 import (
 	"net/http"
 	"time"
+	"tsc/cmd/backend_service/model/migration"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"tsc/internal/backend_service/model/migration"
 	"tsc/pkg/common"
 	"tsc/pkg/util/migration/core"
 )

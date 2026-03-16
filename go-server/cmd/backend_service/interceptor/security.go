@@ -3,7 +3,7 @@ package interceptor
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"tsc/internal/backend_service/cfg"
+	"tsc/cmd/backend_service/cfg"
 )
 
 const SECURITY_KEY_HEADER = "SECURITY_KEY_HEADER"
