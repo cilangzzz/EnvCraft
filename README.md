@@ -56,7 +56,7 @@ git clone https://github.com/your-username/EnvCraft.git
 cd EnvCraft
 
 # 进入服务端目录
-cd go-server
+cd craft_client_server
 
 # 安装依赖
 go mod download
