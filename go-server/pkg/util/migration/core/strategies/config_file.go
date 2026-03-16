@@ -333,20 +333,6 @@ func (s *ConfigFileStrategy) readConfigFile(path, format, encoding string) (map[
 				data[fullKey] = key.Value()
 			}
 		}
-	case "xml":
-		// XML 解析为通用 map 结构
-		var xmlData interface{}
-		if err := xml.Unmarshal(content, &xmlData); err != nil {
-			return nil, fmt.Errorf("failed to parse XML: %w", err)
-		}
-		// 将 XML 数据转换为 map
-		if m, ok := xmlData.(map[string]interface{}); ok {
-			data = m
-		} else {
-			// 如果无法直接转换为 map，存储原始内容
-			data["_raw"] = string(content)
-			data["_type"] = "xml"
-		}
 	default:
 		return nil, fmt.Errorf("unsupported format: %s", format)
 	}
@@ -390,17 +376,6 @@ func (s *ConfigFileStrategy) writeConfigFile(path string, data map[string]interf
 			sb.WriteString(fmt.Sprintf("%s = %v\n", key, value))
 		}
 		content = []byte(sb.String())
-	case "xml":
-		// XML 序列化
-		if rawContent, ok := data["_raw"].(string); ok {
-			content = []byte(rawContent)
-		} else {
-			xmlContent, err := xml.MarshalIndent(data, "", "  ")
-			if err != nil {
-				return fmt.Errorf("failed to serialize XML: %w", err)
-			}
-			content = []byte(xml.Header + string(xmlContent))
-		}
 	default:
 		return fmt.Errorf("unsupported format: %s", format)
 	}

@@ -17,6 +17,7 @@
     ],
     "additionalDirectories": [
       "H:\\basePlatform\\testData"
+      "Bash(powershell -Command \"cd ''f:\\\\work\\\\self-dev\\\\环境迁移\\\\EnvCraft\\\\go-server''; go build ./...\")"
     ]
   }
 }
