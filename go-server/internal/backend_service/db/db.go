@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"sync"
-	"tsc/internal/cfg"
+	"tsc/internal/backend_service/cfg"
 )
 
 var (

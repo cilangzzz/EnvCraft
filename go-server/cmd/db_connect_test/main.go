@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/spf13/viper"
+	cfg2 "tsc/internal/backend_service/cfg"
 	"tsc/internal/backend_service/db"
-	"tsc/internal/cfg"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 		panic(fmt.Errorf("读取配置文件失败: %v", err))
 	}
 	// 解析配置到结构体
-	var applicationConfig cfg.ApplicationConfig
+	var applicationConfig cfg2.ApplicationConfig
 	if err := viper.Unmarshal(&applicationConfig); err != nil {
 		panic(fmt.Errorf("解析配置失败: %v", err))
 	}
@@ -27,8 +27,8 @@ func main() {
 	//	return
 	//}
 
-	cfg.GlobalServerConfig = &applicationConfig
-	_, err := db.InitDB(cfg.DB_SQLITE)
+	cfg2.GlobalServerConfig = &applicationConfig
+	_, err := db.InitDB(cfg2.DB_SQLITE)
 	if err != nil {
 		return
 	}
