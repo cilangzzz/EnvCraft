@@ -181,6 +181,9 @@ type MigrationResult struct {
 	// Message 结果消息
 	Message string `json:"message" gorm:"type:text;comment:结果消息"`
 
+	// Warnings 警告信息
+	Warnings []string `json:"warnings" gorm:"type:json;comment:警告信息"`
+
 	// Records 迁移记录
 	Records []MigrationRecord `json:"records" gorm:"type:json;comment:迁移记录"`
 
@@ -324,9 +327,10 @@ func NewMigrationConfig() *MigrationConfig {
 // NewMigrationResult 创建迁移结果实例
 func NewMigrationResult(taskID string) *MigrationResult {
 	return &MigrationResult{
-		TaskID:  taskID,
-		Records: make([]MigrationRecord, 0),
-		Summary: MigrationSummary{},
+		TaskID:   taskID,
+		Records:  make([]MigrationRecord, 0),
+		Warnings: make([]string, 0),
+		Summary:  MigrationSummary{},
 	}
 }
 

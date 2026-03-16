@@ -328,10 +328,10 @@ func (s *SoftwareStrategy) migrateRegistry(ctx context.Context, config *core.Mig
 	registryConfig := &core.MigrationConfig{
 		TaskID: config.TaskID,
 		Type:   constants.MigrationTypeRegistry,
-		Source: core.Source{
+		Source: core.MigrationSource{
 			Path: registryPath,
 		},
-		Target: core.Target{
+		Target: core.MigrationTarget{
 			Path: registryPath, // 同一注册表路径
 		},
 		Context: config.Context,

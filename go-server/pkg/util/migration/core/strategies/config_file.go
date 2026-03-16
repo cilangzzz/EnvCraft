@@ -289,8 +289,14 @@ func (s *ConfigFileStrategy) readConfigFile(path, format, encoding string) (map[
 			format = "ini"
 		case ".toml":
 			format = "toml"
+		case ".xml":
+			format = "xml"
+		case ".icls":
+			// IntelliJ color scheme files are XML-based
+			format = "xml"
 		default:
-			return nil, fmt.Errorf("unsupported file format: %s", ext)
+			// 对于未知格式，返回空数据，让调用方可以处理原始内容
+			return data, nil
 		}
 	}
 
@@ -333,8 +339,17 @@ func (s *ConfigFileStrategy) readConfigFile(path, format, encoding string) (map[
 				data[fullKey] = key.Value()
 			}
 		}
+	case "xml":
+		// XML 支持：将 XML 转换为 map
+		var xmlNode XMLNode
+		if err := xml.Unmarshal(content, &xmlNode); err != nil {
+			// XML 解析失败时返回空 map，让调用方可以处理原始内容
+			return data, nil
+		}
+		data = xmlNodeToMap(&xmlNode)
 	default:
-		return nil, fmt.Errorf("unsupported format: %s", format)
+		// 对于不支持的格式，返回空数据，让调用方可以处理原始内容
+		return data, nil
 	}
 
 	return data, nil
@@ -376,6 +391,13 @@ func (s *ConfigFileStrategy) writeConfigFile(path string, data map[string]interf
 			sb.WriteString(fmt.Sprintf("%s = %v\n", key, value))
 		}
 		content = []byte(sb.String())
+	case "xml":
+		// XML 支持
+		xmlContent, err := mapToXML(data)
+		if err != nil {
+			return fmt.Errorf("failed to serialize XML: %w", err)
+		}
+		content = xmlContent
 	default:
 		return fmt.Errorf("unsupported format: %s", format)
 	}
@@ -831,4 +853,98 @@ func (s *ConfigFileStrategy) validateExportPackage(pkg *core.ExportPackage) erro
 // generateExportID 生成导出ID
 func generateExportID() string {
 	return fmt.Sprintf("export_%d", time.Now().UnixNano())
+}
+
+// XMLNode 用于解析 XML 的通用节点结构
+type XMLNode struct {
+	XMLName xml.Name
+	Attrs   []xml.Attr `xml:",any,attr"`
+	Content string     `xml:",chardata"`
+	Nodes   []XMLNode  `xml:",any"`
+}
+
+// xmlNodeToMap 将 XML 节点转换为 map
+func xmlNodeToMap(node *XMLNode) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	// 处理属性
+	for _, attr := range node.Attrs {
+		result["@"+attr.Name.Local] = attr.Value
+	}
+
+	// 处理子节点
+	for _, child := range node.Nodes {
+		key := child.XMLName.Local
+		childMap := xmlNodeToMap(&child)
+
+		// 如果已有同名键，转换为数组
+		if existing, ok := result[key]; ok {
+			var arr []interface{}
+			switch v := existing.(type) {
+			case []interface{}:
+				arr = v
+			default:
+				arr = []interface{}{v}
+			}
+			result[key] = append(arr, childMap)
+		} else {
+			result[key] = childMap
+		}
+	}
+
+	// 处理文本内容
+	if strings.TrimSpace(node.Content) != "" && len(result) == 0 {
+		return map[string]interface{}{"#text": strings.TrimSpace(node.Content)}
+	} else if strings.TrimSpace(node.Content) != "" {
+		result["#text"] = strings.TrimSpace(node.Content)
+	}
+
+	return result
+}
+
+// mapToXML 将 map 转换为 XML 字节
+func mapToXML(data map[string]interface{}) ([]byte, error) {
+	var sb strings.Builder
+	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+	sb.WriteString("\n")
+
+	rootWritten := false
+	for key, value := range data {
+		if strings.HasPrefix(key, "@") || key == "#text" {
+			continue
+		}
+		if !rootWritten {
+			sb.WriteString(fmt.Sprintf("<%s>", key))
+			mapToXMLElement(&sb, value)
+			sb.WriteString(fmt.Sprintf("</%s>\n", key))
+			rootWritten = true
+		}
+	}
+
+	return []byte(sb.String()), nil
+}
+
+// mapToXMLElement 将值转换为 XML 元素
+func mapToXMLElement(sb *strings.Builder, value interface{}) {
+	switch v := value.(type) {
+	case map[string]interface{}:
+		for key, val := range v {
+			if strings.HasPrefix(key, "@") {
+				continue // 跳过属性处理（简化）
+			}
+			if key == "#text" {
+				sb.WriteString(fmt.Sprintf("%v", val))
+				continue
+			}
+			sb.WriteString(fmt.Sprintf("<%s>", key))
+			mapToXMLElement(sb, val)
+			sb.WriteString(fmt.Sprintf("</%s>", key))
+		}
+	case []interface{}:
+		for _, item := range v {
+			mapToXMLElement(sb, item)
+		}
+	default:
+		sb.WriteString(fmt.Sprintf("%v", v))
+	}
 }
