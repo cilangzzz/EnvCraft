@@ -11,6 +11,7 @@ import (
 
 	"tsc/pkg/util/migration"
 	"tsc/pkg/util/migration/core"
+	_ "tsc/pkg/util/migration/core/strategies" // 触发策略注册
 )
 
 const (
